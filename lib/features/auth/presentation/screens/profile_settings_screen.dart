@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/providers/auth_provider.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 
@@ -175,15 +176,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 size: 18,
                                 color: Colors.white,
                               ),
-                              onPressed: () {
+                              onPressed: () async {
                                 final imagePicker = ImagePicker();
-
-                                final pickedFile = await imagePicker.pickImage(
-                                  source: ImageSource.gallery,
-                                );
-                                if (pickedFile != null) {
-                                  // Handle the picked image file
-await provider.updateUserProfileImage(pickedFile.path);
+                                try {
+                                  final pickedFile = await imagePicker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (pickedFile != null && mounted) {
+                                    await provider.updateProfileImage(pickedFile.path);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Profile image updated successfully')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Failed to update profile image: $e')),
+                                    );
+                                  }
                                 }
                               },
                             ),

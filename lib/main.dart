@@ -4,15 +4,25 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:easy_localization/easy_localization.dart';
+
 import 'core/network/api_cache.dart';
 import 'core/utils/database_encryption.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/environment.dart';
 import 'core/config/environment_service.dart';
 import 'core/auth/auth_service.dart';
+import 'core/services/home_stats_provider.dart';
+
 import 'features/task/presentation/screens/task_list_screen.dart';
+import 'features/task/task_scheduler_screen.dart';
 import 'features/chat/presentation/screens/chat_screen.dart';
+import 'features/wellness/wellness_screen.dart';
 import 'features/ocr/presentation/screens/ocr_screen.dart';
+import 'features/multilingual_support/language_settings_screen.dart';
+import 'features/notifications/notifications_screen.dart';
+import 'features/auth/profile_screen.dart';
+import 'features/settings/settings_screen.dart';
+
 import 'features/task/data/repositories/task_repository.dart';
 import 'features/task/data/services/task_service.dart';
 import 'features/task/data/services/task_api_service.dart';
@@ -21,13 +31,15 @@ import 'features/wellness/mood_tracker/data/mood_repository.dart';
 import 'features/wellness/mood_tracker/providers/mood_provider.dart';
 import 'features/wellness/mood_tracker/screens/mood_tracker_screen.dart';
 import 'features/wellness/mood_tracker/data/mood_entry_model.dart';
-import 'services/connectivity_service.dart';
 import 'features/chat/data/repositories/chat_repository.dart';
 import 'features/chat/domain/message.dart';
 import 'features/wellness/water_tracker/models/water_entry.dart';
 import 'features/wellness/water_tracker/data/water_repository.dart';
 import 'features/multilingual_support/presentation/language_selector.dart';
 import 'features/chat/data/services/chat_api_service.dart';
+import 'services/connectivity_service.dart';
+
+import 'home_page.dart'; // Import HomePage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -75,6 +87,7 @@ void main() async {
         Provider<ChatRepository>.value(value: chatRepository),
         Provider<AuthService>.value(value: authService),
         Provider<ConnectivityService>.value(value: connectivityService),
+        ChangeNotifierProvider(create: (_) => HomeStatsProvider()),
       ],
       child: EasyLocalization(
         supportedLocales: const [
@@ -85,37 +98,37 @@ void main() async {
         ],
         path: 'assets/translations',
         fallbackLocale: const Locale('en'),
-        child: MyApp(
-          prefs: prefs,
-          connectivityService: connectivityService,
-          authService: authService,
-        ),
+        child: const MyApp(), // Removed unused parameters
       ),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final SharedPreferences prefs;
-  final ConnectivityService connectivityService;
-  final AuthService authService;
-
-  const MyApp({
-    super.key,
-    required this.prefs,
-    required this.connectivityService,
-    required this.authService,
-  });
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LifeEase',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
       locale: context.locale,
-      home: const HomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomePage(),
+        '/task': (context) => const TaskSchedulerScreen(),
+        '/chat': (context) => const ChatScreen(),
+        '/wellness': (context) => const WellnessScreen(),
+        '/ocr': (context) => const OCRScreen(),
+        '/languages': (context) => const LanguageSettingsScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/settings': (context) => const SettingsScreen(),
+      },
     );
   }
 }

@@ -116,6 +116,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateProfileImage(String imagePath) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      if (_currentUser == null) throw Exception('No user logged in');
+
+      final updatedUser = await _userService.updateProfile(
+        userId: _currentUser!.id,
+        profileImage: imagePath,
+      );
+
+      _currentUser = updatedUser;
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

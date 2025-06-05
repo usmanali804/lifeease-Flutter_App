@@ -1,7 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const { createServer } = require('http');
+const DatabaseManager = require('./config/database');
+const WebSocketManager = require('./config/websocket');
+const { initializeModels } = require('./models');
 const authRoutes = require('./routes/auth.routes');
 const taskRoutes = require('./routes/task.routes');
 const chatRoutes = require('./routes/chat.routes');
@@ -10,23 +13,42 @@ const userRoutes = require('./routes/user.routes');
 const rateLimiter = require('./middleware/rate-limiter.middleware');
 const { errorHandler } = require('./middleware/error.middleware');
 
-// Load environment variables
+// Load environment variables and configuration
 dotenv.config();
+const config = require('./config/config');
 
 const app = express();
+const server = createServer(app);
+
+// Initialize WebSocket
+const wsManager = WebSocketManager.getInstance(server);
 
 // Security Middleware
-app.use(cors());
+app.use(cors(config.corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
 
 // Request logging in development
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} [${req.method}] ${req.path}`);
-    next();
-  });
+if (config.nodeEnv === 'development') {
+  const morgan = require('morgan');
+  app.use(morgan('dev'));
 }
+
+// Initialize database connection
+const dbManager = DatabaseManager.getInstance();
+dbManager.connect()
+  .then(() => {
+    console.log('Database connected successfully');
+    return initializeModels();
+  })
+  .then(() => {
+    console.log('Database models initialized successfully');
+  })
+  .catch((error) => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  });
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -54,54 +76,51 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/messages', chatRoutes);
 app.use('/api/water-entries', waterRoutes);
+app.use('/api', userRoutes);  // This will make user routes available at /api/profile
+
+// Root API endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Welcome to Life Ease API',
+    version: '1.0',
+    endpoints: {
+      auth: '/api/auth',
+      tasks: '/api/tasks',
+      messages: '/api/messages',
+      waterEntries: '/api/water-entries',
+      profile: '/api/profile'
+    },
+    documentation: 'For more information about specific endpoints, please refer to the API documentation'
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-//Define a GET route for "/api"
-app.get('/api', (req, res) => {
-  res.send('✅ API is working!');
-});
-
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
-
-const PORT = process.env.PORT || 3000;
+app.use(errorHandler);
 
 // Start server
-async function startServer() {
-  try {
-    await connectDB();
-    
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`API endpoints available at http://localhost:${PORT}/api`);
-      console.log('Available routes:');
-      console.log('  - /api/auth');
-      console.log('  - /api/tasks');
-      console.log('  - /api/messages');
-      console.log('  - /api/water-entries');
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-}
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`API endpoints available at http://localhost:${PORT}/api`);
+  console.log('Available routes:');
+  console.log('  - /api/auth');
+  console.log('  - /api/tasks');
+  console.log('  - /api/messages');
+  console.log('  - /api/water-entries');
+});
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+// Handle uncaught exceptions and rejections
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
-process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Rejection:', error);
   process.exit(1);
 });
-
-startServer();
