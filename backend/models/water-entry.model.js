@@ -12,9 +12,15 @@ const waterEntrySchema = new mongoose.Schema({
     enum: ['ml', 'oz'],
     default: 'ml'
   },
+  type: {
+    type: String,
+    enum: ['water', 'coffee', 'tea', 'juice', 'other'],
+    default: 'water'
+  },
   timestamp: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    required: true
   },
   note: {
     type: String,
@@ -23,7 +29,21 @@ const waterEntrySchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
+  },
+  location: {
+    type: String,
+    trim: true
+  },
+  temperature: {
+    type: String,
+    enum: ['cold', 'room', 'hot'],
+    default: 'room'
+  },
+  reminderSet: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

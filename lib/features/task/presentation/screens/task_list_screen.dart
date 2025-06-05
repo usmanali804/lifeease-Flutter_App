@@ -4,9 +4,14 @@ import '../../data/repositories/task_repository.dart';
 import '../../domain/models/task.dart';
 import 'task_form_screen.dart';
 
-class TaskListScreen extends StatelessWidget {
+class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
 
+  @override
+  State<TaskListScreen> createState() => _TaskListScreenState();
+}
+
+class _TaskListScreenState extends State<TaskListScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = context.read<TaskRepository>();
@@ -63,8 +68,9 @@ class TaskListScreen extends StatelessWidget {
 
           return RefreshIndicator(
             onRefresh: () async {
-              // Trigger a rebuild by calling setState in a StatefulBuilder
-              (context as Element).markNeedsBuild();
+              setState(() {
+                // Trigger a rebuild
+              });
             },
             child: ListView.builder(
               itemCount: tasks.length,
@@ -195,9 +201,10 @@ class TaskListScreen extends StatelessWidget {
                           builder: (context) => TaskFormScreen(task: task),
                         ),
                       );
-                      if (updatedTask != null && context.mounted) {
-                        // Trigger a rebuild to show updated task
-                        (context as Element).markNeedsBuild();
+                      if (updatedTask != null && mounted) {
+                        setState(() {
+                          // Trigger a rebuild to show updated task
+                        });
                       }
                     },
                   ),
@@ -213,9 +220,10 @@ class TaskListScreen extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (context) => const TaskFormScreen()),
           );
-          if (newTask != null && context.mounted) {
-            // Trigger a rebuild to show new task
-            (context as Element).markNeedsBuild();
+          if (newTask != null && mounted) {
+            setState(() {
+              // Trigger a rebuild to show new task
+            });
           }
         },
         child: const Icon(Icons.add),
