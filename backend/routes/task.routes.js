@@ -63,4 +63,23 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Get task categories
+router.get('/categories', async (req, res) => {
+  try {
+    // Return predefined task categories
+    const categories = [
+      'personal',
+      'work',
+      'shopping',
+      'health',
+      'education',
+      'social',
+      'other'
+    ];
+    res.json(categories.map(name => ({ name })));
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task categories' });
+  }
+});
+
 module.exports = router;

@@ -4,15 +4,23 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/network/api_cache.dart';
 import 'core/utils/database_encryption.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/environment.dart';
 import 'core/config/environment_service.dart';
+import 'features/settings/providers/theme_provider.dart';
+import 'features/settings/providers/notification_settings_provider.dart';
 import 'core/auth/auth_service.dart';
+import 'core/auth/auth_wrapper.dart';
 import 'core/services/home_stats_provider.dart';
 
+import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/auth/presentation/screens/signup_screen.dart';
+import 'features/auth/data/providers/auth_provider.dart';
+import 'features/auth/data/services/user_service.dart';
 import 'features/task/presentation/screens/task_list_screen.dart';
 import 'features/task/task_scheduler_screen.dart';
 import 'features/chat/presentation/screens/chat_screen.dart';
@@ -40,10 +48,19 @@ import 'features/chat/data/services/chat_api_service.dart';
 import 'services/connectivity_service.dart';
 
 import 'home_page.dart'; // Import HomePage
+import 'core/database/repository_factory.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    // Fallback values if .env file is not available
+    dotenv.env['ENVIRONMENT'] = 'development';
+    dotenv.env['API_URL'] = 'http://localhost:3000/api';
+  }
 
   // Initialize environment configuration
   EnvironmentConfig.init();
@@ -54,40 +71,52 @@ void main() async {
 
   // Initialize Database Encryption
   await DatabaseEncryption.instance.generateNewEncryptionKey();
-
   // Initialize Hive with encryption
   await Hive.initFlutter();
   final encryptionCipher =
       await DatabaseEncryption.instance.getEncryptionCipher();
 
-  // Register Hive adapters
-  Hive.registerAdapter(TaskAdapter());
-  Hive.registerAdapter(MessageAdapter());
-  Hive.registerAdapter(MoodEntryAdapter());
-  Hive.registerAdapter(WaterEntryAdapter());
+  // Set encryption cipher in repository factory if available
+  if (encryptionCipher != null) {
+    RepositoryFactory.instance.setEncryptionCipher(encryptionCipher);
+  }
+
+  // Register Hive adaptersif not already registered
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(TaskAdapter());
+  }
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(MessageAdapter());
+  }
+  if (!Hive.isAdapterRegistered(2)) {
+    Hive.registerAdapter(MoodEntryAdapter());
+  }
+  if (!Hive.isAdapterRegistered(3)) {
+    Hive.registerAdapter(WaterEntryAdapter());
+  }
 
   // Initialize core services
   final prefs = await SharedPreferences.getInstance();
   final connectivityService = ConnectivityService();
   final authService = AuthService(prefs);
-  // Initialize API services
-  final taskApiService = TaskApiService();
-
-  // Initialize Hive boxes and create repositories
-  await Hive.openBox<Task>('tasks', encryptionCipher: encryptionCipher);
-  await Hive.openBox<Message>('messages', encryptionCipher: encryptionCipher);
-
-  final taskRepository = TaskRepository(connectivityService, taskApiService);
-  final chatRepository = ChatRepository(connectivityService, authService);
-
+  final userService = UserService(authService: authService);
   runApp(
     MultiProvider(
       providers: [
-        Provider<TaskRepository>.value(value: taskRepository),
-        Provider<ChatRepository>.value(value: chatRepository),
         Provider<AuthService>.value(value: authService),
         Provider<ConnectivityService>.value(value: connectivityService),
+        ChangeNotifierProvider(
+          create:
+              (_) => AuthProvider(
+                authService: authService,
+                userService: userService,
+              ),
+        ),
         ChangeNotifierProvider(create: (_) => HomeStatsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
+        ChangeNotifierProvider(
+          create: (_) => NotificationSettingsProvider(prefs),
+        ),
       ],
       child: EasyLocalization(
         supportedLocales: const [
@@ -98,7 +127,7 @@ void main() async {
         ],
         path: 'assets/translations',
         fallbackLocale: const Locale('en'),
-        child: const MyApp(), // Removed unused parameters
+        child: const MyApp(),
       ),
     ),
   );
@@ -119,7 +148,10 @@ class MyApp extends StatelessWidget {
       locale: context.locale,
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomePage(),
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignupScreen(),
+        '/home': (context) => const HomePage(),
         '/task': (context) => const TaskSchedulerScreen(),
         '/chat': (context) => const ChatScreen(),
         '/wellness': (context) => const WellnessScreen(),

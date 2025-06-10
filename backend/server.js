@@ -20,11 +20,20 @@ const config = require('./config/config');
 const app = express();
 const server = createServer(app);
 
+// Debug logging for routes
+const debugRouter = express.Router();
+debugRouter.use((req, res, next) => {
+  console.log('Debug - Current route:', req.originalUrl);
+  next();
+});
+app.use(debugRouter);
+
 // Initialize WebSocket
 const wsManager = WebSocketManager.getInstance(server);
 
 // Security Middleware
 app.use(cors(config.corsOptions));
+app.options('*', cors(config.corsOptions)); // Enable pre-flight for all routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimiter);
@@ -76,11 +85,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/messages', chatRoutes);
 app.use('/api/water-entries', waterRoutes);
-app.use('/api', userRoutes);  // This will make user routes available at /api/profile
+app.use('/api/users', userRoutes);  // This will make user routes available at /api/users/profile
 
 // Root API endpoint
-app.get('/api', (req, res) => {
-  res.json({
+app.get('/api', (req, res) => {  res.json({
     message: 'Welcome to Life Ease API',
     version: '1.0',
     endpoints: {
@@ -88,7 +96,7 @@ app.get('/api', (req, res) => {
       tasks: '/api/tasks',
       messages: '/api/messages',
       waterEntries: '/api/water-entries',
-      profile: '/api/profile'
+      users: '/api/users'
     },
     documentation: 'For more information about specific endpoints, please refer to the API documentation'
   });
@@ -104,8 +112,9 @@ app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Server accessible at http://192.168.1.119:${PORT}`);
   console.log(`API endpoints available at http://localhost:${PORT}/api`);
   console.log('Available routes:');
   console.log('  - /api/auth');

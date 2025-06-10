@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'water_entry.g.dart';
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 3)
 class WaterEntry extends HiveObject {
   @HiveField(0)
   final String id;
@@ -78,4 +78,4 @@ class WaterEntry extends HiveObject {
   int get hashCode {
     return Object.hash(id, date, amount, note, isSynced);
   }
-} 
+}

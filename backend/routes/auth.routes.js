@@ -14,21 +14,26 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    const user = new User({ email, password, name });
+    const user = new User({
+      email,
+      password,
+      profile: {
+        username: email.split('@')[0], // Generate username from email
+        fullName: name
+      }    });
     await user.save();
-
+    
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
-
     user.refreshToken = refreshToken;
     await user.save();
-
     res.status(201).json({
       access_token: token,
       refresh_token: refreshToken,
       expires_in: 3600
     });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Error creating user' });
   }
 });

@@ -164,33 +164,33 @@ class ApiException implements Exception {
 }
 
 class NetworkException extends ApiException {
-  NetworkException(String message) : super(message);
+  NetworkException(super.message);
 }
 
 class TimeoutException extends ApiException {
-  TimeoutException(String message) : super(message);
+  TimeoutException(super.message);
 }
 
 class BadRequestException extends ApiException {
-  BadRequestException(String message) : super(message);
+  BadRequestException(super.message);
 }
 
 class UnauthorizedException extends ApiException {
-  UnauthorizedException(String message) : super(message);
+  UnauthorizedException(super.message);
 }
 
 class ForbiddenException extends ApiException {
-  ForbiddenException(String message) : super(message);
+  ForbiddenException(super.message);
 }
 
 class NotFoundException extends ApiException {
-  NotFoundException(String message) : super(message);
+  NotFoundException(super.message);
 }
 
 class ServerException extends ApiException {
-  ServerException(String message) : super(message);
+  ServerException(super.message);
 }
 
 class UnknownException extends ApiException {
-  UnknownException(String message) : super(message);
+  UnknownException(super.message);
 }

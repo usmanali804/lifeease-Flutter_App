@@ -1,7 +1,7 @@
 /// This file contains all the constants used throughout the app
 class AppConstants {
   // API Constants
-  static const String baseUrl = 'http://localhost:3000/api';
+  static const String baseUrl = 'http://192.168.1.110:3000/api';
   static const int apiTimeout = 30000; // 30 seconds
 
   // Storage Keys

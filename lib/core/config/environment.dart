@@ -1,4 +1,6 @@
-import 'dart:io' show Platform;
+import 'dart:io'
+    if (dart.library.html) 'package:life_ease/core/config/web_platform.dart'
+    show Platform;
 
 /// Represents the different environments the app can run in
 enum Environment { development, staging, production }
@@ -15,14 +17,8 @@ class EnvironmentConfig {
     if (envString.isNotEmpty) {
       _environment = _parseEnvironment(envString);
     } else {
-      // Fall back to environment variable
-      final envVar = Platform.environment['LIFEEASE_ENV'];
-      if (envVar != null) {
-        _environment = _parseEnvironment(envVar);
-      } else {
-        // Use provided environment or default to development
-        _environment = environment ?? Environment.development;
-      }
+      // Use provided environment or default to development
+      _environment = environment ?? Environment.development;
     }
     _apiBaseUrl = _getApiBaseUrl();
   }
@@ -52,7 +48,7 @@ class EnvironmentConfig {
   static String _getApiBaseUrl() {
     switch (_environment) {
       case Environment.development:
-        return 'http://localhost:3000/api';
+        return 'http://192.168.1.110:3000/api';
       case Environment.staging:
         return 'https://staging-api.lifeease.app/v1';
       case Environment.production:
